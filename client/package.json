@@ -40,5 +40,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:4002"
+  "proxy": "http://flashcards_backend:4000"
 }
