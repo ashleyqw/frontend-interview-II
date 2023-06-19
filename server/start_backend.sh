@@ -5,8 +5,5 @@ docker exec -it flashcards_backend npm install
 
 docker cp database.sql flashcards_database:/
 
-docker network create flashcards
 docker network connect flashcards flashcards_backend
 docker network connect flashcards flashcards_database
-sleep 5
-./start_database.sh
