@@ -7,7 +7,7 @@ import FlashcardWrapper from "./Flashcard";
 import Autocomplete from "./Autocomplete";
 
 const updateFlashcard = ({id, newTerm, newDefinition}: {id: string, newTerm: string, newDefinition: string}) => {
-  return fetch(API_PREFIX + '/' + id, {method: 'PATCH', headers: {
+  return fetch('/api/flashcards/' + id, {method: 'PATCH', headers: {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({term: newTerm, definition: newDefinition}),
@@ -15,10 +15,19 @@ const updateFlashcard = ({id, newTerm, newDefinition}: {id: string, newTerm: str
 }
 
 
+const updateManyFlashcards = (flashcards: Flashcard[]) => {
+  return fetch('/api/flashcards', {method: 'PATCH', headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({flashcards: flashcards}),
+  })
+}
+
+
 const useFlashcards = (): [(FlashcardAndLocalState)[], React.Dispatch<React.SetStateAction<(FlashcardAndLocalState)[]>>] => {
   const [flashcards, setFlashcards] = useState<(FlashcardAndLocalState)[]>([]);
   useEffect(() => {
-    fetch(API_PREFIX )
+    fetch('/api/flashcards')
       .then((response) => response.json())
       .then((flashcardApiResult: Flashcard[]) => {
         const flashcardsWithLocalState = flashcardApiResult.map((flashcard) => {
@@ -116,13 +125,9 @@ function App() {
   }, {} as { [id: string]: FlashcardWithActionsAndLocalState });
 
   const saveAll = useCallback(() => {
-    const saveAllPromises = flashcards.map((flashcard) => {
-      return updateFlashcard({id: flashcard.id, newTerm: flashcard.term, newDefinition: flashcard.definition});
-    });
-    Promise.all(saveAllPromises)
-      .then(() => {
-        alert("Saved all flashcards!");
-      });
+    updateManyFlashcards(flashcards).then((res) => {
+      alert("Saved all flashcards!");
+    })
   }, []);
 
   // Pretend save all works
