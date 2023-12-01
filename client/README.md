@@ -2,7 +2,7 @@
 
 ## Setup
 
-In one terminal shell, run `npm start` to start the client. In another, cd into the backend and run `./start_backend.sh` to start the backend.
+In one terminal shell, run `cd client && ./start_frontend.sh` to start the client. In another, run `cd server && ./start_backend.sh` to start the backend.
 
 ## Prompt
 
