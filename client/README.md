@@ -2,7 +2,7 @@
 
 ## Setup
 
-In one terminal shell, run `cd client && ./start_frontend.sh` to start the client. In another, run `cd server && ./start_backend.sh` to start the backend.
+In the terminal, run `./setup.sh`. Once the setup script is complete, open the app by going to the "PORTS" tab next to the terminal, and clicking the "Open in browser" button for Port 4001.
 
 ## Prompt
 
