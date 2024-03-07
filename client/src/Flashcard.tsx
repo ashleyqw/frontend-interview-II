@@ -1,50 +1,54 @@
-import {FlashcardWithActionsAndLocalState} from "./types";
-
-
-export type FlashcardIdMap = {
-  [id: string]: FlashcardWithActionsAndLocalState,
-}
+import {FlashcardAndLocalState} from "./types";
+import React, { useState } from 'react';
+import {updateFlashcard} from "./App";
 
 type FlashcardWrapperProps = {
-  id: string,
-  flashcardsWithActions: FlashcardIdMap,
-  saveAll: () => void,
+  flashcard: FlashcardAndLocalState,
+  addToUpdateList: (id: string, term: string, definition: string) => void
 }
 
-const FlashcardWriteMode = (props: FlashcardWithActionsAndLocalState & {id: string}) => {
+const FlashcardWriteMode = ({flashcard, setInEditMode, addToUpdateList} : {flashcard: FlashcardAndLocalState, setInEditMode: (j: boolean) => void, addToUpdateList: (id: string, term: string, definition: string) => void}) => {
+  const [term, setTerm] = useState(flashcard.term)
+  const [definition, setDefinition] = useState(flashcard.definition)
   // This mimics a long running process / this component being deeper nested
   Array(100000).fill(0)
   return (
     <div>
-      <input value={props.term} onChange={(e) => props.setFlashcardTerm({id: props.id, newTerm: e.target.value})}/>
-      <input value={props.definition} onChange={(e) => props.setFlashcardDefinition({id: props.id, newDefinition: e.target.value})}/>
+      <input value={term} onChange={(e) => {
+        setTerm(e.target.value);
+        addToUpdateList(flashcard.id, e.target.value, definition);
+      }}/>
+      <input value={definition} onChange={(e) => {
+          setDefinition(e.target.value);
+          addToUpdateList(flashcard.id, term, e.target.value);
+        }}/>
       <div>
-        <button onClick={() => props.toggleEditMode({id: props.id})}>Read</button>
-        <button onClick={() => props.saveFlashcard({id: props.id})}>Save</button>
+        <button onClick={() => setInEditMode(false)}>Read</button>
+        <button onClick={() => updateFlashcard({id: flashcard.id, newTerm: term, newDefinition: definition})}>Save</button>
       </div>
     </div>
   )
 }
 
-const FlashcardReadMode = (props: FlashcardWithActionsAndLocalState & {id: string}) => {
+const FlashcardReadMode = ({flashcard, setInEditMode} : {flashcard: FlashcardAndLocalState, setInEditMode: (j: boolean) => void}) => {
   return (
     <div>
-      <div>{props.term}</div>
-      <div>{props.definition}</div>
-      <button onClick={() => props.toggleEditMode({id: props.id})}>Edit</button>
+      <div>{flashcard.term}</div>
+      <div>{flashcard.definition}</div>
+      <button onClick={() => setInEditMode(true)}>Edit</button>
     </div>
   )
 }
 
 const FlashcardWrapper = (props: FlashcardWrapperProps) => {
-  const { id, flashcardsWithActions } = props;
+  const { flashcard, addToUpdateList } = props;
+  const [inEditMode, setInEditMode] = useState(true)
   return (
     <div>
-      <button onClick={props.saveAll}>Save all</button>
-      {flashcardsWithActions[id].isInEditMode ?
-        <FlashcardWriteMode {...flashcardsWithActions[id]} id={id} />
+      {inEditMode ?
+        <FlashcardWriteMode flashcard={flashcard} setInEditMode={setInEditMode} addToUpdateList={addToUpdateList} />
         :
-        <FlashcardReadMode {...flashcardsWithActions[id]} id={id}/>
+        <FlashcardReadMode flashcard={flashcard} setInEditMode={setInEditMode} />
       }
     </div>
   )

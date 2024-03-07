@@ -5,8 +5,8 @@ const { db } = require('../adapters/postgres');
 // Sample code to show syntax, not relevant to application but should help get started
 
 /* GET users listing. */
-router.get("/flashcard-ideas", async function(req, res, next) {
-  const dataResults = await db.query('select * from flashcards');
+router.get("/flashcard-ideas/:input", async function(req, res, next) {
+  const dataResults = await db.query(`select * from flashcards where definition like '${req.params.input}%' limit 10`);
   const allDefinitions = dataResults.map( (result) => result.definition);
   res.send({ definitions: allDefinitions });
 });

@@ -1,32 +1,29 @@
-// Autocomplete.tsx
-
 import React, { useState } from 'react';
 
-interface AutocompleteProps {
-  suggestions: string[];
-}
-
-const Autocomplete = ({ suggestions }: AutocompleteProps) => {
+const Autocomplete = () => {
   const [inputValue, setInputValue] = useState('');
-  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [definitionIdeas, setDefinitionIdeas] = useState<(string)[]>([]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setInputValue(value);
-
-    // Filter the suggestions based on the input value
-    const filtered = suggestions.filter((suggestion) =>
-      suggestion.toLowerCase().startsWith(value.toLowerCase())
-    );
-    setFilteredSuggestions(filtered);
-
     setShowSuggestions(true);
+    if (value) {
+      fetch('/api/flashcard-ideas/' + value)
+        .then((response) => response.json())
+        .then((flashcardApiResult) => {
+          setDefinitionIdeas(flashcardApiResult.definitions);
+        });
+    } else {
+      setDefinitionIdeas([]);
+    }
   };
 
   const handleSelection = (value: string) => {
     setInputValue(value);
     setShowSuggestions(false);
+    setDefinitionIdeas([]);
   };
 
   return (
@@ -36,12 +33,11 @@ const Autocomplete = ({ suggestions }: AutocompleteProps) => {
         value={inputValue}
         onChange={handleChange}
       />
-
       {showSuggestions && (
         <ul>
-          {filteredSuggestions.map((suggestion, index) => (
-            <li key={index} onClick={() => handleSelection(suggestion)}>
-              {suggestion}
+          {definitionIdeas.map((idea, index) => (
+            <li key={index} onClick={() => handleSelection(idea)}>
+              {idea}
             </li>
           ))}
         </ul>

@@ -1,12 +1,15 @@
 /* eslint-disable */
 import React, {useCallback, useEffect, useState} from 'react';
 import './App.css';
-import {API_PREFIX} from "./constants";
-import {Flashcard, FlashcardAndLocalState, FlashcardWithActionsAndLocalState} from "./types";
+import {Flashcard, FlashcardAndLocalState} from "./types";
 import FlashcardWrapper from "./Flashcard";
 import Autocomplete from "./Autocomplete";
 
-const updateFlashcard = ({id, newTerm, newDefinition}: {id: string, newTerm: string, newDefinition: string}) => {
+type CardMap = {
+  [id: string]: Flashcard
+}
+
+export const updateFlashcard = ({id, newTerm, newDefinition}: {id: string, newTerm: string, newDefinition: string}) => {
   return fetch('/api/flashcards/' + id, {method: 'PATCH', headers: {
     'Content-Type': 'application/json',
   },
@@ -14,18 +17,14 @@ const updateFlashcard = ({id, newTerm, newDefinition}: {id: string, newTerm: str
   })
 }
 
-
-const updateManyFlashcards = (flashcards: Flashcard[]) => {
-  return fetch('/api/flashcards', {method: 'PATCH', headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({flashcards: flashcards}),
-  })
-}
-
-
-const useFlashcards = (): [(FlashcardAndLocalState)[], React.Dispatch<React.SetStateAction<(FlashcardAndLocalState)[]>>] => {
+const useFlashcards = (): {
+  flashcards: FlashcardAndLocalState[],
+  updatedCards: CardMap,
+  addToUpdateList: (id: string, newTerm: string, newDefinition: string) => void,
+} => {
   const [flashcards, setFlashcards] = useState<(FlashcardAndLocalState)[]>([]);
+  const updatedCards: CardMap = {}; 
+
   useEffect(() => {
     fetch('/api/flashcards')
       .then((response) => response.json())
@@ -36,109 +35,38 @@ const useFlashcards = (): [(FlashcardAndLocalState)[], React.Dispatch<React.SetS
         setFlashcards(flashcardsWithLocalState);
       });
   }, []);
-  return [flashcards, setFlashcards];
-}
 
-const useFlashcardIdeas = (): (string)[] => {
-  const [definitionIdeas, setDefinitionIdeas] = useState<(string)[]>([]);
-  useEffect(() => {
-    fetch('/api/flashcard-ideas' )
-      .then((response) => response.json())
-      .then((flashcardApiResult) => {
-        console.log(`flashcardApiResult: `, flashcardApiResult)
-        setDefinitionIdeas(flashcardApiResult.definitions);
-      });
-  }, []);
-  return definitionIdeas;
+  const addToUpdateList = (id: string, newTerm: string, newDefinition: string): void => {
+    updatedCards[id] = {id, term: newTerm, definition: newDefinition}
+  }
+
+  return {flashcards, updatedCards, addToUpdateList};
 }
 
 function App() {
-  const [ flashcards, setFlashcards ] = useFlashcards();
-  const definitionIdeas = useFlashcardIdeas();
-
-  const updateFlashcardTerm = async ({id, newTerm}: {id: string, newTerm: string}) => {
-    const existingFlashcard = flashcards.find((flashcard) => flashcard.id === id);
-    if (existingFlashcard === undefined) {
-      throw new Error("Flashcard not found")
-    }
-    const newFlashcard = { ...existingFlashcard, term: newTerm };
-    const newFlashcards = flashcards.map((flashcard) => {
-      if (flashcard.id === id) {
-        return newFlashcard;
-      }
-      return flashcard;
-    });
-    setFlashcards(newFlashcards);
-  }
-
-  const updateFlashcardDefinition = async ({id, newDefinition}: {id: string, newDefinition: string}) => {
-  const existingFlashcard = flashcards.find((flashcard) => flashcard.id === id);
-    if (existingFlashcard === undefined) {
-      throw new Error("Flashcard not found")
-    }
-    const newFlashcard = { ...existingFlashcard, definition: newDefinition };
-    const newFlashcards = flashcards.map((flashcard) => {
-      if (flashcard.id === id) {
-        return newFlashcard;
-      }
-      return flashcard;
-    });
-    setFlashcards(newFlashcards);
-  }
-
-  const toggleEditMode = async ({ id }: { id: string }) => {
-    const existingFlashcard = flashcards.find((flashcard) => flashcard.id === id);
-    if (existingFlashcard === undefined) {
-      throw new Error("Flashcard not found")
-    }
-    const newFlashcard = { ...existingFlashcard, isInEditMode: !existingFlashcard.isInEditMode };
-    const newFlashcards = flashcards.map((flashcard) => {
-      if (flashcard.id === id) {
-        return newFlashcard;
-      }
-      return flashcard;
-    });
-    setFlashcards(newFlashcards);
-  }
-
-  const saveFlashcard = async ({ id }: { id: string }) => {
-    const existingFlashcard = flashcards.find((flashcard) => flashcard.id === id);
-    if (existingFlashcard === undefined) {
-      throw new Error("Flashcard not found")
-    }
-    await updateFlashcard({id, newTerm: existingFlashcard.term, newDefinition: existingFlashcard.definition});
-  }
-
-  const flashcardsWithActionsList = flashcards.map((flashcard) => {
-    return {
-      ...flashcard,
-      setFlashcardTerm: updateFlashcardTerm,
-      setFlashcardDefinition: updateFlashcardDefinition,
-      toggleEditMode,
-      saveFlashcard,
-    }
-  });
-
-  const flashcardsIdMap = flashcardsWithActionsList.reduce((acc, flashcard) => {
-    acc[flashcard.id] = flashcard;
-    return acc;
-  }, {} as { [id: string]: FlashcardWithActionsAndLocalState });
+  const { flashcards, updatedCards, addToUpdateList } = useFlashcards();
 
   const saveAll = useCallback(() => {
-    updateManyFlashcards(flashcards).then((res) => {
+    Promise.all(Object.entries(updatedCards).map(
+      async ([id, card]) => {
+        await updateFlashcard({id, newTerm: card.term, newDefinition: card.definition})
+      }))
+    .then((res) => {
       alert("Saved all flashcards!");
     })
-  }, []);
+  }, [flashcards]);
 
   // Pretend save all works
+  // Save all now works but not a perfect solution
   return (
     <div className="App">
       <header className="App-header">
         <h1>Get ideas for flashcards</h1>
-        <Autocomplete suggestions={definitionIdeas} />
+        <Autocomplete/>
         <h1>Here are all the flashcards!</h1>
+        <button onClick={saveAll}>Save all</button>
         {flashcards.map((flashcard) => (
-          <FlashcardWrapper id={flashcard.id} flashcardsWithActions={flashcardsIdMap} saveAll={saveAll} />
+          <FlashcardWrapper flashcard={flashcard} addToUpdateList={addToUpdateList} />
         ))}
       </header>
     </div>
